@@ -1,5 +1,8 @@
 from abc import ABC, abstractmethod
 
+# from enum import Enum
+
+
 class PacketHeader:
     PACKET_HEADER_SIZE = 1
 
@@ -12,6 +15,7 @@ class PacketHeader:
     def from_bytes(self, header):
         id_ = header
         self.id = id_
+
 
 class Packet(ABC):
     @abstractmethod
@@ -26,6 +30,7 @@ class Packet(ABC):
     def from_bytes(self, payload):
         raise NotImplementedError
 
+
 # Better to use an Enum
 class PacketHandler:
     def __init__(self):
@@ -39,3 +44,6 @@ class PacketHandler:
         self.id_to_class[packetID] = packetClass
         self.class_to_id[packetClass] = packetID
         self._current_id += 1
+
+
+packetHandler = PacketHandler()

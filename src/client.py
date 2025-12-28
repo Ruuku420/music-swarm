@@ -4,23 +4,17 @@ import threading
 from peer import Peer
 from connection import Connection
 
+
 class Client:
     def __init__(self):
         self.peers = ()
-        self.peers_lock = threading.Lock()
+        self.peers_lock = threading.RLock()
 
     def connect_to_peer(peer):
-        sock = socket.socket(
-            socket.AF_INET,
-            socket.SOCK_STREAM
-        )
-        
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
         # Server and client must use the same address
-        sock.setsockopt(
-            socket.SOL_SOCKET,
-            socket.SO_REUSEADDR,
-            1
-        )
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
         incoming = Connection(sock, peer.id_)
         peer.incoming_socket = incoming
@@ -37,4 +31,6 @@ class Client:
             self.peers.push(new_peer)
 
     def peers_from_list(self, peer_list):
-        raise NotImplemented
+        with self.peers_lock:
+            for peer in peer_list:
+                self.peers.push(peer)

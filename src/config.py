@@ -1,4 +1,4 @@
 import configparser
 
 settings = configparser.ConfigParser()
-settings.read('settings.ini')
+settings.read("settings.ini")
