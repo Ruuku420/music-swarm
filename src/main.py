@@ -6,10 +6,10 @@ from client import Client
 
 def main():
     server_config = settings["server.config"]
-    host = server_config.get("Host", "127.0.0.1")
-    port = int(server_config.get("Port", "1234"))
+    host: str = server_config.get("Host", "127.0.0.1")
+    port: int = int(server_config.get("Port", "1234"))
 
-    address = (host, port)
+    address: tuple[str, int] = (host, port)
 
     client = Client()
 

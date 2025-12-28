@@ -2,22 +2,20 @@ import socket
 import threading
 
 from peer import Peer
-from connection import Connection
 
 
 class Client:
     def __init__(self):
-        self.peers = ()
+        self.peers = set()
         self.peers_lock = threading.RLock()
 
-    def connect_to_peer(peer):
+    def connect_to_outgoing(addr):
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
         # Server and client must use the same address
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-
-        incoming = Connection(sock, peer.id_)
-        peer.incoming_socket = incoming
+        sock.connect(addr)
+        return sock
 
     def add_peer(self, address, incomimg=None, outgoing=None):
         with self.peers_lock:
@@ -34,3 +32,6 @@ class Client:
         with self.peers_lock:
             for peer in peer_list:
                 self.peers.push(peer)
+
+    def check_for_addr_in_peer():
+        raise NotImplementedError

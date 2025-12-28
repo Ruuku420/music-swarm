@@ -6,15 +6,21 @@ from abc import ABC, abstractmethod
 class PacketHeader:
     PACKET_HEADER_SIZE = 1
 
-    def __init__(self, id_: int = None):
-        self.id = id_
+    def __init__(self):
+        self.packet_id = None
+        """"Ts in bytes fam"""
+        self.packet_length = None
+
+        # TODO HOW THE FUCK FORMATTING
+        # Maybe calculate them manually?
+        self._PACKET_ID_SIZE: int = 1
+        self._PACKET_LENGTH_SIZE: int = 0
 
     def to_bytes(self) -> bytes:
-        return self.id.to_bytes(self.PACKET_HEADER_SIZE, "big")
+        return self.packet_id.to_bytes(self.PACKET_HEADER_SIZE, "big")
 
     def from_bytes(self, header):
-        id_ = header
-        self.id = id_
+        self.packet_id = header[self._PACKET_ID_SIZE]
 
 
 class Packet(ABC):

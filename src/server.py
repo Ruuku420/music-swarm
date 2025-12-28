@@ -1,7 +1,7 @@
 import socket
 import threading
 
-from connection import listen_for_connection
+from connection import listen_for_peer
 
 
 class Server(threading.Thread):
@@ -22,7 +22,7 @@ class Server(threading.Thread):
 
         self.listening = True
         while self.listening:
-            listen_for_connection(self._socket, self.client)
+            listen_for_peer(self._socket, self.client)
 
     def stop(self):
         self.listening = False
