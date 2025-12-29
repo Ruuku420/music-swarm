@@ -26,12 +26,12 @@ class Client:
             new_peer.incoming_socket = incomimg
             new_peer.outgoing_socket = outgoing
 
-            self.peers.push(new_peer)
+            self.peers.append(new_peer)
 
     def peers_from_list(self, peer_list):
         with self.peers_lock:
             for peer in peer_list:
-                self.peers.push(peer)
+                self.peers.append(peer)
 
     def check_for_addr_in_peer():
         raise NotImplementedError

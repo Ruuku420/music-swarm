@@ -1,6 +1,6 @@
 import threading
 
-from queue import Queue
+# from queue import Queue
 
 from packet_handler import PacketHeader, packetHandler
 
@@ -9,9 +9,11 @@ class Connection(threading.Thread):
     def __init__(self, socket, address):
         threading.Thread.__init__(self)
         self._socket = socket
-        self._recieved_queue = Queue()
+        # self._received_queue = Queue()
         self.address = address
         self.alive = True
+
+        self.RECV_BYTES = 4096
 
     def run(self):
         while self.alive:
@@ -32,23 +34,56 @@ class Connection(threading.Thread):
         data.extend(packetHeader.to_bytes())
         data.extend(packet.to_bytes())
 
+        # Might be better to use socket.send
+        # Cannot tell how much data was sent if an error occurs
         self._socket.sendall(data)  # Get OS error if sent to a dead socket
 
-    def read(self):
-        # TODO: Will break on any packets larger enough
-        # This byte size is completely arbitrary
-        data = self._socket.recv(4096)
+    def _check_for_sock_end(self, data):
         if not data:
+            raise RuntimeError("Socket connection has been broken")
+        else:
+            return
+
+    def read(self):
+        """
+        Bill Gates says, "abstraction layers are like condoms.
+        You should wear at least three otherwise you're a terrorist"
+            - Terry A. Davis
+        """
+
+        chunks = []
+        bytes_received = 0
+
+        chunk = self._socket.recv(self.RECV_BYTES)
+        try:
+            self._check_for_sock_end(chunk)
+        except RuntimeError:
             self.alive = False
             return
 
-        header = data[PacketHeader.PACKET_HEADER_SIZE - 1]
+        header = chunk[PacketHeader.PACKET_HEADER_SIZE - 1]
         packetHeader = PacketHeader()
         packetHeader.from_bytes(header)
-        if packetHeader.id not in packetHeader.id_to_class.keys():
+        if packetHeader.packet_id not in packetHandler.id_to_class.keys():
             return
 
-        payload = data[PacketHeader.PACKET_HEADER_SIZE :]
+        body = chunk[PacketHeader.PACKET_HEADER_SIZE :]
+        bytes_received += len(body)
+        chunks.append(body)
+
+        while bytes_received < packetHeader.packet_length:
+            chunk = self._socket.recv(self.RECV_BYTES)
+            try:
+                self._check_for_sock_end(chunk)
+            except RuntimeError:
+                self.alive = False
+                return
+
+            bytes_received += len(chunk)
+            chunks.append(chunk)
+
+        payload = b"".join(chunks)
+
         packet = packetHandler.id_to_class[
             packetHeader.packet_id
         ]()  # FIXME: Enum issue
