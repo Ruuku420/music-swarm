@@ -1,15 +1,12 @@
 import threading
 
-# from queue import Queue
-
-from packet_handler import PacketHeader, packetHandler
+import packet_handler as Packet
 
 
 class Connection(threading.Thread):
     def __init__(self, socket, address):
         threading.Thread.__init__(self)
         self._socket = socket
-        # self._received_queue = Queue()
         self.address = address
         self.alive = True
 
@@ -17,7 +14,10 @@ class Connection(threading.Thread):
 
     def run(self):
         while self.alive:
-            self.read()
+            try:
+                self.read()
+            except RuntimeError:
+                self.alive = False
 
         self._close_connection()
 
@@ -26,16 +26,16 @@ class Connection(threading.Thread):
 
     def send(self, packet):
         # socket.sendfile
+
+        # encode()
         # Need to indicate packet length
-        packetID = packetHandler.class_to_id[packet.__class__]  # FIXME
-        packetHeader = PacketHeader(packetID)
+        packetID = Packet.packetHandler.class_to_id[packet.__class__]
+        packetHeader = Packet.PacketHeader(packetID)
 
-        data = bytearray()
-        data.extend(packetHeader.to_bytes())
-        data.extend(packet.to_bytes())
+        packetTrailer = Packet.PacketTrailer()
 
-        # Might be better to use socket.send
-        # Cannot tell how much data was sent if an error occurs
+        data = Packet.encode(header=packetHeader, payload=packet, trailer=packetTrailer)
+
         self._socket.sendall(data)  # Get OS error if sent to a dead socket
 
     def _check_for_sock_end(self, data):
@@ -45,50 +45,36 @@ class Connection(threading.Thread):
             return
 
     def read(self):
-        """
-        Bill Gates says, "abstraction layers are like condoms.
-        You should wear at least three otherwise you're a terrorist"
-            - Terry A. Davis
-        """
+        # Localizing common heavy functions can majorly increase performance
+        recv = self._socket.recv
 
+        header_bytes = recv(Packet.PacketHeader.PACKET_HEADER_SIZE)
+        self._check_for_sock_end(header_bytes)
+
+        header = Packet.PacketHeader.from_bytes(header_bytes)
+        packet_class = Packet.packetHandler.id_to_class.get(header.packet_id)
+        if packet_class is None:
+            raise RuntimeError("PacketID not valid")
+
+        remaining = header.packet_length
         chunks = []
-        bytes_received = 0
 
-        chunk = self._socket.recv(self.RECV_BYTES)
-        try:
+        while remaining > 0:
+            chunk = recv(min(self.RECV_BYTES, remaining))
             self._check_for_sock_end(chunk)
-        except RuntimeError:
-            self.alive = False
-            return
-
-        header = chunk[PacketHeader.PACKET_HEADER_SIZE - 1]
-        packetHeader = PacketHeader()
-        packetHeader.from_bytes(header)
-        if packetHeader.packet_id not in packetHandler.id_to_class.keys():
-            return
-
-        body = chunk[PacketHeader.PACKET_HEADER_SIZE :]
-        bytes_received += len(body)
-        chunks.append(body)
-
-        while bytes_received < packetHeader.packet_length:
-            chunk = self._socket.recv(self.RECV_BYTES)
-            try:
-                self._check_for_sock_end(chunk)
-            except RuntimeError:
-                self.alive = False
-                return
-
-            bytes_received += len(chunk)
             chunks.append(chunk)
+            remaining -= len(chunk)
 
         payload = b"".join(chunks)
 
-        packet = packetHandler.id_to_class[
-            packetHeader.packet_id
-        ]()  # FIXME: Enum issue
+        trailer_bytes = recv(Packet.PacketTrailer.PACKET_TRAILER_SIZE)
+        self._check_for_sock_end(trailer_bytes)
+        trailer = Packet.PacketTrailer.from_bytes(trailer_bytes)
+        trailer.verify(payload)
 
-        packet.from_bytes(payload)
+        packet = packet_class.from_bytes(payload)  # FIXME: Enum issue
+        # Verify checksum before handling
+        # Next based wrapper for handling?
         packet.handle(self)
 
 

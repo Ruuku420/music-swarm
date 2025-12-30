@@ -1,7 +1,13 @@
+import signal
+
 from config import settings
 
 from server import Server
 from client import Client
+
+
+def sigint_handler(signum, frame):
+    print("Shutting down...")
 
 
 def main():
@@ -11,6 +17,7 @@ def main():
 
     address: tuple[str, int] = (host, port)
 
+    # signal.signal(signal.SIGINT, sigint_handler)
     client = Client()
 
     server = Server(address, client)

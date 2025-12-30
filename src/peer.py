@@ -1,8 +1,8 @@
 class Peer:
     def __init__(self, addr):
         self.id_ = addr
-        self.incoming_socket = None
-        self.outgoing_socket = None
+        self.incoming_conn = None
+        self.outgoing_conn = None
 
         self.data = None
 
@@ -11,3 +11,6 @@ class Peer:
 
     def __eq__(self, other):
         return self.id_ == other.id_
+
+    def disconnect(self):
+        raise NotImplementedError
