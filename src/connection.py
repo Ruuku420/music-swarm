@@ -1,4 +1,5 @@
 import threading
+from queue import Queue
 
 import packet_handler as Packet
 
@@ -7,6 +8,7 @@ class Connection(threading.Thread):
     def __init__(self, socket, address):
         threading.Thread.__init__(self)
         self._socket = socket
+        self._send_queue = Queue()
         self.address = address
         self.alive = True
 
@@ -37,8 +39,13 @@ class Connection(threading.Thread):
         packetTrailer = Packet.PacketTrailer()
         packetTrailer.create_crc(packet_bytes)
 
-        data = Packet.encode(header=packetHeader, payload=packet, trailer=packetTrailer)
+        data = Packet.encode(
+            header=packetHeader, payload=packet, trailer=packetTrailer
+        )
 
+        self._send_queue.put(data)
+
+    def _send(self, data):
         self._socket.sendall(data)
 
     def _check_for_sock_end(self, data):
@@ -84,19 +91,11 @@ class Connection(threading.Thread):
 
 
 def listen_for_peer(server, client):
-    incoming_sock, addr = server.accept()
+    sock, addr = server.accept()
 
-    incoming_conn = Connection(incoming_sock, addr)
-    incoming_conn.start()
-
-    with client.peer_lock:
-        if addr in client.peers:
-            idx = client.peers.index(addr)
-            client.peers[idx].incoming_conn = incoming_conn
-            return
-
-    outgoing_sock = client.connect_to_outgoing(addr)
-    outgoing_conn = Connection(outgoing_sock, addr)
-    outgoing_conn.start()
-
-    client.add_peer(addr, incoming=incoming_conn, outgoing=outgoing_conn)
+    conn = Connection(sock, addr)
+    conn.start()
+    client.add_peer(addr, conn)
+    # peer = client.add_peer(addr, conn)
+    # with client.peers_lock:
+    #   peer.send_pex(client.peers)

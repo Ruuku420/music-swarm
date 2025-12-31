@@ -1,8 +1,7 @@
 class Peer:
     def __init__(self, addr):
         self.id_ = addr
-        self.incoming_conn = None
-        self.outgoing_conn = None
+        self.connection = None
 
         self.data = None
 
@@ -18,8 +17,5 @@ class Peer:
         return self.id_ == other.id_
 
     def disconnect(self):
-        self.incoming_conn.alive = False
-        self.outgoing_conn.alive = False
-
-        self.incoming_conn.join()
-        self.outgoing_conn.join()
+        self.connection.alive = False
+        self.connection.join()

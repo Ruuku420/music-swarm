@@ -10,36 +10,31 @@ class Client:
         self.peers = []
         self.peers_lock = threading.RLock()
 
-    def connect_to_outgoing(addr):
+    def _connect(self, address):
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.connect(address)
 
-        # Server and client must use the same address
-        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        sock.connect(addr)
-        return sock
+        return Connection(sock, address)
 
-    def add_peer(self, address, *, incomimg=None, outgoing=None):
-        with self.peers_lock:
-            new_peer = Peer(address)
+    def connect_to_peer(self, address):
+        conn = self.connect(address)
+        conn.start()
+        self.add_peer(address, conn)
 
-            new_peer.incoming_socket = incomimg
-            new_peer.outgoing_socket = outgoing
+    def add_peer(self, address, connection):
+        new_peer = Peer(address)
 
-            if new_peer in self.peer_list:
-                return
-            else:
-                self.peers.append(new_peer)
+        new_peer.connection = connection
+        self.peers.append(new_peer)
+        return new_peer
 
     def peers_from_list(self, addr_list):
         with self.peers_lock:
-            for addr in addr_list:
-                outgoing_sock = self.connect_to_outgoing(addr)
-                outgoing_conn = Connection(outgoing_sock, addr)
-                outgoing_conn.start()
-
-                self.add_peer(addr, outgoing=outgoing_conn)
+            for address in addr_list:
+                self.connect_to_peer(address)
 
     def disconnect(self):
         with self.peers_lock:
             for peer in self.peers:
                 peer.disconnect()
+                self.peers.remove(peer)

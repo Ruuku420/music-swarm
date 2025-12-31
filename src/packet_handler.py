@@ -69,7 +69,7 @@ class PacketTrailer(Serializable):
             raise RuntimeError("Checksum of packet doesn't match")
 
 
-class Packet(ABC, Serializable):
+class Packet(Serializable):
     @abstractmethod
     def handle(self, peer):
         raise NotImplementedError
@@ -93,6 +93,8 @@ class PacketHandler:
 packetHandler = PacketHandler()
 
 
-def encode(*, header: PacketHeader, payload: Packet, trailer: PacketTrailer) -> bytes:
+def encode(
+    *, header: PacketHeader, payload: Packet, trailer: PacketTrailer
+) -> bytes:
     data = bytes(header.to_bytes() + payload.to_bytes() + trailer.to_bytes())
     return data
