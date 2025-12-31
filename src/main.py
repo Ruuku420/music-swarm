@@ -1,4 +1,4 @@
-import signal
+# import signal
 
 from config import settings
 

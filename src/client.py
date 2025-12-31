@@ -2,11 +2,12 @@ import socket
 import threading
 
 from peer import Peer
+from connection import Connection
 
 
 class Client:
     def __init__(self):
-        self.peers = set()
+        self.peers = []
         self.peers_lock = threading.RLock()
 
     def connect_to_outgoing(addr):
@@ -17,21 +18,28 @@ class Client:
         sock.connect(addr)
         return sock
 
-    def add_peer(self, address, incomimg=None, outgoing=None):
+    def add_peer(self, address, *, incomimg=None, outgoing=None):
         with self.peers_lock:
             new_peer = Peer(address)
-            if new_peer in self.peer_list:
-                return
 
             new_peer.incoming_socket = incomimg
             new_peer.outgoing_socket = outgoing
 
-            self.peers.append(new_peer)
+            if new_peer in self.peer_list:
+                return
+            else:
+                self.peers.append(new_peer)
 
-    def peers_from_list(self, peer_list):
+    def peers_from_list(self, addr_list):
         with self.peers_lock:
-            for peer in peer_list:
-                self.peers.append(peer)
+            for addr in addr_list:
+                outgoing_sock = self.connect_to_outgoing(addr)
+                outgoing_conn = Connection(outgoing_sock, addr)
+                outgoing_conn.start()
 
-    def check_for_addr_in_peer():
-        raise NotImplementedError
+                self.add_peer(addr, outgoing=outgoing_conn)
+
+    def disconnect(self):
+        with self.peers_lock:
+            for peer in self.peers:
+                peer.disconnect()

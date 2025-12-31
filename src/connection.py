@@ -10,6 +10,8 @@ class Connection(threading.Thread):
         self.address = address
         self.alive = True
 
+        # self.error_log = []
+
         self.RECV_BYTES = 4096
 
     def run(self):
@@ -26,17 +28,18 @@ class Connection(threading.Thread):
 
     def send(self, packet):
         # socket.sendfile
+        packet_bytes = packet.to_bytes()
 
-        # encode()
-        # Need to indicate packet length
         packetID = Packet.packetHandler.class_to_id[packet.__class__]
-        packetHeader = Packet.PacketHeader(packetID)
+        packetLength = len(packet_bytes)
+        packetHeader = Packet.PacketHeader(packetID, packetLength)
 
         packetTrailer = Packet.PacketTrailer()
+        packetTrailer.create_crc(packet_bytes)
 
         data = Packet.encode(header=packetHeader, payload=packet, trailer=packetTrailer)
 
-        self._socket.sendall(data)  # Get OS error if sent to a dead socket
+        self._socket.sendall(data)
 
     def _check_for_sock_end(self, data):
         if not data:
@@ -48,13 +51,13 @@ class Connection(threading.Thread):
         # Localizing common heavy functions can majorly increase performance
         recv = self._socket.recv
 
-        header_bytes = recv(Packet.PacketHeader.PACKET_HEADER_SIZE)
+        header_bytes = recv(Packet.PACKET_HEADER_SIZE)
         self._check_for_sock_end(header_bytes)
 
         header = Packet.PacketHeader.from_bytes(header_bytes)
         packet_class = Packet.packetHandler.id_to_class.get(header.packet_id)
         if packet_class is None:
-            raise RuntimeError("PacketID not valid")
+            return
 
         remaining = header.packet_length
         chunks = []
@@ -67,14 +70,16 @@ class Connection(threading.Thread):
 
         payload = b"".join(chunks)
 
-        trailer_bytes = recv(Packet.PacketTrailer.PACKET_TRAILER_SIZE)
+        trailer_bytes = recv(Packet.PACKET_TRAILER_SIZE)
         self._check_for_sock_end(trailer_bytes)
         trailer = Packet.PacketTrailer.from_bytes(trailer_bytes)
-        trailer.verify(payload)
 
-        packet = packet_class.from_bytes(payload)  # FIXME: Enum issue
-        # Verify checksum before handling
-        # Next based wrapper for handling?
+        try:
+            trailer.verify(payload)
+        except RuntimeError:
+            return
+
+        packet = packet_class.from_bytes(payload)
         packet.handle(self)
 
 
@@ -83,6 +88,12 @@ def listen_for_peer(server, client):
 
     incoming_conn = Connection(incoming_sock, addr)
     incoming_conn.start()
+
+    with client.peer_lock:
+        if addr in client.peers:
+            idx = client.peers.index(addr)
+            client.peers[idx].incoming_conn = incoming_conn
+            return
 
     outgoing_sock = client.connect_to_outgoing(addr)
     outgoing_conn = Connection(outgoing_sock, addr)

@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 import zlib
+import math
 
 # from enum import Enum
 
@@ -15,18 +16,24 @@ class Serializable(ABC):
         raise NotImplementedError
 
 
+# TODO
+PACKET_ID_SIZE = math.ceil((127).bit_length() / 7)  # u8 int limit for # of ids
+PACKET_LENGTH_SIZE = math.ceil((1024**2).bit_length() / 7)  # 1 mb
+
+PACKET_HEADER_SIZE = PACKET_ID_SIZE + PACKET_LENGTH_SIZE
+
+
 class PacketHeader(Serializable):
-    PACKET_HEADER_SIZE = 1
-
-    PACKET_ID_SIZE = 1
-    PACKET_LENGTH_SIZE = 0
-
     def __init__(self, packet_id: int, packet_length: int):
         self.packet_id = packet_id
         self.packet_length = packet_length
 
     def to_bytes(self) -> bytes:
-        return self.packet_id.to_bytes(self.PACKET_HEADER_SIZE, "big")
+        data = bytes(
+            self.packet_id.to_bytes(self.PACKET_ID_SIZE)
+            + self.packet_length.to_bytes(self.PACKET_LENGTH_SIZE)
+        )
+        return data
 
     @classmethod
     def from_bytes(cls, payload):
@@ -35,27 +42,28 @@ class PacketHeader(Serializable):
         return cls(packet_id, packet_length)
 
 
+PACKET_CHECKSUM_SIZE = 4  # idk how to prove this but
+PACKET_TRAILER_SIZE = PACKET_CHECKSUM_SIZE
+
+
 class PacketTrailer(Serializable):
-    # from zlib import crc32
-    # can be 28 bytes if b''? Valid concern
-
-    PACKET_TRAILER_SIZE = 32
-
-    PACKET_CHECKSUM_SIZE = 32
-
     def __init__(self, crc):
         self.crc = crc
 
     def to_bytes(self) -> bytes:
-        return self.packet_id.to_bytes(self.PACKET_TRAILER_SIZE, "big")
+        pass
 
     @classmethod
     def from_bytes(cls, payload):
         crc = payload
         return cls(crc)
 
-    def verify(self, payload):
-        if self.crc == zlib.crc32(payload):
+    # Better abstraction?
+    def create_crc(self, payload: bytes):
+        self.crc = zlib.crc32(payload)
+
+    def verify(self, payload: bytes):
+        if int.from_bytes(self.crc) == zlib.crc32(payload):
             return
         else:
             raise RuntimeError("Checksum of packet doesn't match")
@@ -85,11 +93,6 @@ class PacketHandler:
 packetHandler = PacketHandler()
 
 
-def encode(
-    *, header: PacketHeader, payload: Packet, trailer: PacketTrailer
-) -> bytearray:
-    data = bytearray()
-    data.extend(header.to_bytes())
-    data.extend(payload.to_bytes())
-    data.extend(trailer.to_bytes())
+def encode(*, header: PacketHeader, payload: Packet, trailer: PacketTrailer) -> bytes:
+    data = bytes(header.to_bytes() + payload.to_bytes() + trailer.to_bytes())
     return data

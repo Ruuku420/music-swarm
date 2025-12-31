@@ -10,7 +10,16 @@ class Peer:
         return self.id_
 
     def __eq__(self, other):
+        """
+        Allows `in` checks without connections confounding whether or not the
+        id is found in a Peer.
+        """
+
         return self.id_ == other.id_
 
     def disconnect(self):
-        raise NotImplementedError
+        self.incoming_conn.alive = False
+        self.outgoing_conn.alive = False
+
+        self.incoming_conn.join()
+        self.outgoing_conn.join()
