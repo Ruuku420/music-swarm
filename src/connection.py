@@ -4,9 +4,8 @@ from queue import Queue
 import packet_handler as Packet
 
 
-class Connection(threading.Thread):
+class Connection:
     def __init__(self, socket, address):
-        threading.Thread.__init__(self)
         self._socket = socket
         self._send_queue = Queue()
         self.address = address
@@ -16,7 +15,18 @@ class Connection(threading.Thread):
 
         self.RECV_BYTES = 4096
 
+        self.reading_thread = threading.Thread(
+            target=self._read_loop, args=(self,)
+        )
+        self.sending_thread = threading.Thread(
+            target=self._send_loop, args=(self,)
+        )
+
     def run(self):
+        self.reading_thread.start()
+        self.sending_thread.start()
+
+    def _read_loop(self):
         while self.alive:
             try:
                 self.read()
@@ -24,6 +34,13 @@ class Connection(threading.Thread):
                 self.alive = False
 
         self._close_connection()
+
+    def _send_loop(self):
+        while self.alive:
+            if not self._send_queue.empty():
+                data = self._send_queue.get()
+                self._send(data)
+                self._send_queue.task_done()
 
     def _close_connection(self):
         self._socket.close()
@@ -94,7 +111,7 @@ def listen_for_peer(server, client):
     sock, addr = server.accept()
 
     conn = Connection(sock, addr)
-    conn.start()
+    conn.run()
     client.add_peer(addr, conn)
     # peer = client.add_peer(addr, conn)
     # with client.peers_lock:

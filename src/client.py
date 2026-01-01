@@ -17,8 +17,8 @@ class Client:
         return Connection(sock, address)
 
     def connect_to_peer(self, address):
-        conn = self.connect(address)
-        conn.start()
+        conn = self._connect(address)
+        conn.run()
         self.add_peer(address, conn)
 
     def add_peer(self, address, connection):

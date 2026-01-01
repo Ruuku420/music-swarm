@@ -18,4 +18,5 @@ class Peer:
 
     def disconnect(self):
         self.connection.alive = False
-        self.connection.join()
+        self.connection.reading_thread.join()
+        self.connection.sending_thread.join()

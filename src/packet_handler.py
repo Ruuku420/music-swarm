@@ -2,8 +2,6 @@ from abc import ABC, abstractmethod
 import zlib
 import math
 
-# from enum import Enum
-
 
 class Serializable(ABC):
     @abstractmethod
