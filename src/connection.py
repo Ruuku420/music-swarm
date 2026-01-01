@@ -15,12 +15,8 @@ class Connection:
 
         self.RECV_BYTES = 4096
 
-        self.reading_thread = threading.Thread(
-            target=self._read_loop, args=(self,)
-        )
-        self.sending_thread = threading.Thread(
-            target=self._send_loop, args=(self,)
-        )
+        self.reading_thread = threading.Thread(target=self._read_loop)
+        self.sending_thread = threading.Thread(target=self._send_loop)
 
     def run(self):
         self.reading_thread.start()
