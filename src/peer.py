@@ -1,3 +1,9 @@
+from client import client
+
+from packets.pex import PEXPacket
+from packets.ping import PingPacket
+
+
 class Peer:
     def __init__(self, addr):
         self.id_ = addr
@@ -16,7 +22,11 @@ class Peer:
 
         return self.id_ == other.id_
 
-    def disconnect(self):
-        self.connection.alive = False
-        self.connection.reading_thread.join()
-        self.connection.sending_thread.join()
+    def send_ping(self):
+        packet = PingPacket()
+        self.connection.send(packet)
+
+    def send_pex(self, peer_list):
+        address_list = [peer.id_ for peer in client.peers]
+        packet = PEXPacket(address_list)
+        self.connection.send(packet)

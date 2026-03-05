@@ -1,19 +1,19 @@
 from packet_handler import Packet
 
 
-class PEXPacket(Packet):
+class PingPacket(Packet):
     """
-    Peer Exchange: Packet used to send an receive swarm peer list
+    Ping: Testing packet
     """
 
-    def __init__(self, address_list):
-        self.address_list = address_list
+    def __init__(self):
+        pass
 
     def handle(self, connection):
-        pass
+        print("Recieved Ping")
 
     def to_bytes(self) -> bytes:
-        pass
+        return bytes()
 
     @classmethod
     def from_bytes(cls, payload: bytes):

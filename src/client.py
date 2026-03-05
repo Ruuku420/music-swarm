@@ -36,5 +36,9 @@ class Client:
     def disconnect(self):
         with self.peers_lock:
             for peer in self.peers:
-                peer.disconnect()
-                self.peers.remove(peer)
+                peer.connection.disconnect()
+
+        self.peers = []
+
+
+client = Client()

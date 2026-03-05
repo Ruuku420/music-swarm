@@ -1,4 +1,7 @@
 import threading
+
+import socket
+
 from queue import Queue
 
 import packet_handler as Packet
@@ -9,9 +12,8 @@ class Connection:
         self._socket = socket
         self._send_queue = Queue()
         self.address = address
-        self.alive = True
 
-        # self.error_log = []
+        # self.warning_log = []
 
         self.RECV_BYTES = 4096
 
@@ -23,20 +25,20 @@ class Connection:
         self.sending_thread.start()
 
     def _read_loop(self):
-        while self.alive:
+        while True:
             try:
                 self.read()
             except RuntimeError:
-                self.alive = False
+                break
 
         self._close_connection()
 
     def _send_loop(self):
-        while self.alive:
-            if not self._send_queue.empty():
-                data = self._send_queue.get()
-                self._send(data)
-                self._send_queue.task_done()
+        while True:
+            data = self._send_queue.get()
+            if data is None:
+                break
+            self._send(data)
 
     def _close_connection(self):
         self._socket.close()
@@ -102,13 +104,22 @@ class Connection:
         packet = packet_class.from_bytes(payload)
         packet.handle(self)
 
+    def disconnect(self):
+        try:
+            self._socket.shutdown(socket.SHUT_RDWR)
+        except OSError:
+            pass  # already closed
+
+        self._send_queue.put(None)
+        self.reading_thread.join()
+        self.sending_thread.join()
+
 
 def listen_for_peer(server, client):
     sock, addr = server.accept()
 
     conn = Connection(sock, addr)
     conn.run()
-    client.add_peer(addr, conn)
-    # peer = client.add_peer(addr, conn)
-    # with client.peers_lock:
-    #   peer.send_pex(client.peers)
+    peer = client.add_peer(addr, conn)
+    with client.peers_lock:
+        peer.send_pex(client.peers)

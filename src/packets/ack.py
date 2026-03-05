@@ -1,11 +1,11 @@
 from packet_handler import Packet
 
-"""
-Awknowledge: Packet used to awknowledge requests
-"""
-
 
 class AwkPacket(Packet):
+    """
+    Awknowledge: Packet used to awknowledge requests
+    """
+
     def __init__(self):
         pass
 

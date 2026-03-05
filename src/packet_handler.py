@@ -14,8 +14,8 @@ class Serializable(ABC):
         raise NotImplementedError
 
 
-# TODO
-PACKET_ID_SIZE = math.ceil((127).bit_length() / 7)  # u8 int limit for # of ids
+
+PACKET_ID_SIZE = 1 # u8 size is 1 byte. 127 IDs should be plenty
 PACKET_LENGTH_SIZE = math.ceil((1024**2).bit_length() / 7)  # 1 mb
 
 PACKET_HEADER_SIZE = PACKET_ID_SIZE + PACKET_LENGTH_SIZE
@@ -40,7 +40,7 @@ class PacketHeader(Serializable):
         return cls(packet_id, packet_length)
 
 
-PACKET_CHECKSUM_SIZE = 4  # idk how to prove this but
+PACKET_CHECKSUM_SIZE = 4  # zlib.crc32() returns byte size of 4
 PACKET_TRAILER_SIZE = PACKET_CHECKSUM_SIZE
 
 
