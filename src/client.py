@@ -11,6 +11,7 @@ class Client:
         self.peers_lock = threading.RLock()
 
     def _connect(self, address):
+        # TODO: Properly handle connection errors
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.connect(address)
 

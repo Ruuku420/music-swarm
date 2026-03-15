@@ -1,5 +1,7 @@
 from packet_handler import Packet
 
+from client import client
+
 
 class PEXPacket(Packet):
     """
@@ -7,14 +9,24 @@ class PEXPacket(Packet):
     """
 
     def __init__(self, address_list):
+        # List<Tuple<Str, Int>>
         self.address_list = address_list
 
     def handle(self, connection):
-        pass
+        client.peers_from_list(self.address_list)
 
     def to_bytes(self) -> bytes:
-        pass
+        address_binary_list = []
+        for address in self.address_list:
+            hostname = bytes(address[0], "utf-8")
+            port = address[0].to_bytes(2)
+            address_binary_list.append(hostname + port)
+
+        data = address_binary_list
+        return data
 
     @classmethod
     def from_bytes(cls, payload: bytes):
-        return cls()
+        # TODO: Deserialize address_list
+        address_list = payload
+        return cls(address_list)

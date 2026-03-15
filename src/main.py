@@ -37,7 +37,8 @@ def main():
 
     location = (h, p)
 
-    client.connect_to_peer((location)
+    client.connect_to_peer(location)
+
 
 if __name__ == "__main__":
     main()

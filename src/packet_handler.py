@@ -14,8 +14,7 @@ class Serializable(ABC):
         raise NotImplementedError
 
 
-
-PACKET_ID_SIZE = 1 # u8 size is 1 byte. 127 IDs should be plenty
+PACKET_ID_SIZE = 1  # u8 size is 1 byte. 127 IDs should be plenty
 PACKET_LENGTH_SIZE = math.ceil((1024**2).bit_length() / 7)  # 1 mb
 
 PACKET_HEADER_SIZE = PACKET_ID_SIZE + PACKET_LENGTH_SIZE
