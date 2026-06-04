@@ -16,20 +16,31 @@ packetHandler.registerPacket(PingPacket)
 class Server(threading.Thread):
     def __init__(self, address, client):
         threading.Thread.__init__(self)
+        self.daemon = True
+
         self.address = address
         self.listening = None
         self.client = client
+        self._running = False
 
         self._socket = socket.socket(
             socket.AF_INET,
             socket.SOCK_STREAM,
         )
 
+        self._socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+
     def run(self):
+        self._running = True
+
         self._socket.bind(self.address)
         self._socket.listen()
-        while True:
-            listen_for_peer(self._socket, self.client)
+        while self._running:
+            try:
+                listen_for_peer(self._socket, self.client)
+            except:
+                print("[Server Thread] Shutting down...")
+                break
 
     def stop(self):
         try:
@@ -37,3 +48,4 @@ class Server(threading.Thread):
         except OSError:
             pass
         self._socket.close()
+        self.join()

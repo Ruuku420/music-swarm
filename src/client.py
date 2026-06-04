@@ -47,6 +47,7 @@ class Client:
         with self.peers_lock:
             for peer in self.peers:
                 peer.connection.disconnect()
+                print(f"[Client] Peer @ '{peer.id_}' disconnected...")
 
         self.peers = []
 
