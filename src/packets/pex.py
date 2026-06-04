@@ -19,10 +19,11 @@ class PEXPacket(Packet):
         address_binary_list = []
         for address in self.address_list:
             hostname = bytes(address[0], "utf-8")
-            port = address[0].to_bytes(2)
+            port = address[1].to_bytes(2, "big")
             address_binary_list.append(hostname + port)
+            # Append a delimiter?
 
-        data = address_binary_list
+        data = b"".join(address_binary_list)
         return data
 
     @classmethod

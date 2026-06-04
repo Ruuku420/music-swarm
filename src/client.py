@@ -2,6 +2,7 @@ import socket
 import threading
 
 from peer import Peer
+from errors import DuplicateConnectionError
 from connection import Connection
 
 
@@ -11,20 +12,28 @@ class Client:
         self.peers_lock = threading.RLock()
 
     def _connect(self, address):
-        # TODO: Properly handle connection errors
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.connect(address)
-
         return Connection(sock, address)
 
     def connect_to_peer(self, address):
-        conn = self._connect(address)
+        try:
+            conn = self._connect(address)
+        except ConnectionRefusedError:
+            print(
+                f"Connection Refused for address: '{address}'. Not Connected."
+            )
+            return
+
         conn.run()
         self.add_peer(address, conn)
 
     def add_peer(self, address, connection):
         new_peer = Peer(address)
-
+        if new_peer in self.peers:
+            raise DuplicateConnectionError(
+                f"Connection on address {address} already exists."
+            )
         new_peer.connection = connection
         self.peers.append(new_peer)
         return new_peer

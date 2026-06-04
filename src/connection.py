@@ -3,6 +3,7 @@ import threading
 import socket
 
 from queue import Queue
+from errors import DuplicateConnectionError
 
 import packet_handler as Packet
 
@@ -120,6 +121,13 @@ def listen_for_peer(server, client):
 
     conn = Connection(sock, addr)
     conn.run()
-    peer = client.add_peer(addr, conn)
-    with client.peers_lock:
-        peer.send_pex(client.peers)
+    try:
+        peer = client.add_peer(addr, conn)
+    except DuplicateConnectionError:
+        print(
+            f"Duplicate Connection attempt for address: '{addr}'. Not Connected."
+        )
+        return
+
+    # with client.peers_lock:
+    #     peer.send_pex(client.peers)

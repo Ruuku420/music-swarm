@@ -23,16 +23,15 @@ def main():
 
     # Can't pass variables into signal handlers
     def sigint_handler(signum, frame):
-        print("Shutting down...")
+        print("\n[Main Thread] Shutting down...")
         client.disconnect()
         server.stop()
         server.join()
-        sys.exit(0)
 
     signal.signal(signal.SIGINT, sigint_handler)
 
     # For local testing only
-    h = input()
+    h = "127.0.0.1"
     p = int(input())
 
     location = (h, p)

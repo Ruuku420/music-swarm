@@ -27,15 +27,15 @@ class PacketHeader(Serializable):
 
     def to_bytes(self) -> bytes:
         data = bytes(
-            self.packet_id.to_bytes(self.PACKET_ID_SIZE)
-            + self.packet_length.to_bytes(self.PACKET_LENGTH_SIZE)
+            self.packet_id.to_bytes(PACKET_ID_SIZE)
+            + self.packet_length.to_bytes(PACKET_LENGTH_SIZE)
         )
         return data
 
     @classmethod
     def from_bytes(cls, payload):
-        packet_id = payload[cls.PACKET_ID_SIZE - 1]
-        packet_length = 0
+        packet_id = payload[PACKET_ID_SIZE - 1]
+        packet_length = int.from_bytes(payload[PACKET_ID_SIZE:], "big")
         return cls(packet_id, packet_length)
 
 
@@ -44,11 +44,11 @@ PACKET_TRAILER_SIZE = PACKET_CHECKSUM_SIZE
 
 
 class PacketTrailer(Serializable):
-    def __init__(self, crc):
+    def __init__(self, crc=None):
         self.crc = crc
 
     def to_bytes(self) -> bytes:
-        pass
+        return self.crc.to_bytes(PACKET_CHECKSUM_SIZE, "big")
 
     @classmethod
     def from_bytes(cls, payload):
@@ -68,7 +68,7 @@ class PacketTrailer(Serializable):
 
 class Packet(Serializable):
     @abstractmethod
-    def handle(self, peer):
+    def handle(self, connection):
         raise NotImplementedError
 
 
@@ -81,7 +81,7 @@ class PacketHandler:
 
     def registerPacket(self, packetClass):
         packetID = self._current_id
-        packetClass.header = PacketHeader(packetID)
+        packetClass.header = PacketHeader(packetID, None)
         self.id_to_class[packetID] = packetClass
         self.class_to_id[packetClass] = packetID
         self._current_id += 1
