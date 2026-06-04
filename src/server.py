@@ -37,9 +37,10 @@ class Server(threading.Thread):
             self._socket.bind(self.address)
         except OSError:
             print(f"\n[Server Thread] Could not bind to '{self.address[0]}:{self.address[1]}'.")
-            print(f"\n[Server Thread] Perhaps try another port?")
+            print(f"\n[Server Thread] Perhaps try another port or hostname?")
+            hostname = input("[Server Thread] Enter new host hostname: ")
             port = int(input("[Server Thread] Enter new host port: "))
-            self.address = (self.address[0], port)
+            self.address = (hostname, port)
             self._socket.bind(self.address)
 
 

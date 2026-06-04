@@ -132,6 +132,7 @@ def listen_for_peer(server, client):
         )
         return
 
+    print(f"[Host <--> Peer] Connected to '{addr[0]}:{addr[1]}'!")
     with client.peers_lock:
         Ping = Packet.packetHandler.id_to_class.get(1)
         peer.connection.send(Ping())

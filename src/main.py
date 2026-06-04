@@ -44,13 +44,13 @@ def main():
 
     signal.signal(signal.SIGINT, sigint_handler)
 
-    # For local testing only
-    server_hostname = "127.0.0.1"
+    server_hostname = input("[Host <--> Peer] Enter peer hostname: ")
     server_port = int(input("[Host <--> Peer] Enter peer port: "))
 
     location = (server_hostname, server_port)
 
     client.connect_to_peer(location)
+    print(f"Peers: {[peer.id_[0] + ":" + str(peer.id_[1]) for peer in client.peers]}")
 
 if __name__ == "__main__":
     main()
