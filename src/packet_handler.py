@@ -83,7 +83,7 @@ class PacketHandler:
         packetID = self._current_id
         packetClass.header = PacketHeader(packetID, None)
         self.id_to_class[packetID] = packetClass
-        self.class_to_id[packetClass] = packetID
+        self.class_to_id[packetClass.class_id] = packetID
         self._current_id += 1
 
 

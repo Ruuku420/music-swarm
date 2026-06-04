@@ -21,7 +21,7 @@ class Client:
             conn = self._connect(address)
         except ConnectionRefusedError:
             print(
-                f"Connection Refused for address: '{address}'. Not Connected."
+                f"Connection Refused for address: '{address[0]}:{address[1]}'. Not Connected."
             )
             return
 

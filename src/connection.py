@@ -45,10 +45,13 @@ class Connection:
         self._socket.close()
 
     def send(self, packet):
+        if not isinstance(packet, Packet.Packet):
+            raise TypeError("Sent packet is not a packet")
+
         # socket.sendfile
         packet_bytes = packet.to_bytes()
 
-        packetID = Packet.packetHandler.class_to_id[packet.__class__]
+        packetID = Packet.packetHandler.class_to_id[packet.class_id]
         packetLength = len(packet_bytes)
         packetHeader = Packet.PacketHeader(packetID, packetLength)
 
@@ -129,5 +132,7 @@ def listen_for_peer(server, client):
         )
         return
 
-    # with client.peers_lock:
-    #     peer.send_pex(client.peers)
+    with client.peers_lock:
+        Ping = Packet.packetHandler.id_to_class.get(1)
+        peer.connection.send(Ping())
+        print(f"[Host] Sent Ping to {peer.connection.address[0]}:{peer.connection.address[1]}")

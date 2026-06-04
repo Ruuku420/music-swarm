@@ -5,6 +5,7 @@ class AwkPacket(Packet):
     """
     Awknowledge: Packet used to awknowledge requests
     """
+    class_id = 'awk'
 
     def __init__(self):
         pass

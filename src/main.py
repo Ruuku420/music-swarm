@@ -45,13 +45,12 @@ def main():
     signal.signal(signal.SIGINT, sigint_handler)
 
     # For local testing only
-    h = "127.0.0.1"
-    p = int(input("[Host <--> Peer] Enter peer port: "))
+    server_hostname = "127.0.0.1"
+    server_port = int(input("[Host <--> Peer] Enter peer port: "))
 
-    location = (h, p)
+    location = (server_hostname, server_port)
 
     client.connect_to_peer(location)
-
 
 if __name__ == "__main__":
     main()

@@ -5,7 +5,7 @@ class FileBridge:
     def packet_to_file(self, packet: Packet, path):
         packet_bytes = packet.to_bytes()
 
-        packetID = Packet.packetHandler.class_to_id[packet.__class__]
+        packetID = Packet.packetHandler.class_to_id[packet.class_id]
         packetLength = len(packet_bytes)
         packetHeader = Packet.PacketHeader(packetID, packetLength)
 

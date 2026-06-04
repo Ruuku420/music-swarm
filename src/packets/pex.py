@@ -7,6 +7,7 @@ class PEXPacket(Packet):
     """
     Peer Exchange: Packet used to send an receive swarm peer list
     """
+    class_id = 'pex'
 
     def __init__(self, address_list):
         # List<Tuple<Str, Int>>
