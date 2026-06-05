@@ -1,0 +1,97 @@
+from abc import ABC, abstractmethod
+import zlib
+import math
+
+
+class Serializable(ABC):
+    @abstractmethod
+    def to_bytes(self) -> bytes:
+        raise NotImplementedError
+
+    @classmethod
+    @abstractmethod
+    def from_bytes(cls, payload: bytes):
+        raise NotImplementedError
+
+
+PACKET_ID_SIZE = 1  # u8 size is 1 byte. 127 IDs should be plenty
+PACKET_LENGTH_SIZE = math.ceil((1024**2).bit_length() / 7)  # 1 mb
+
+PACKET_HEADER_SIZE = PACKET_ID_SIZE + PACKET_LENGTH_SIZE
+
+
+class PacketHeader(Serializable):
+    def __init__(self, packet_id: int, packet_length: int):
+        self.packet_id = packet_id
+        self.packet_length = packet_length
+
+    def to_bytes(self) -> bytes:
+        data = bytes(
+            self.packet_id.to_bytes(PACKET_ID_SIZE)
+            + self.packet_length.to_bytes(PACKET_LENGTH_SIZE)
+        )
+        return data
+
+    @classmethod
+    def from_bytes(cls, payload):
+        packet_id = payload[PACKET_ID_SIZE - 1]
+        packet_length = int.from_bytes(payload[PACKET_ID_SIZE:], "big")
+        return cls(packet_id, packet_length)
+
+
+PACKET_CHECKSUM_SIZE = 4  # zlib.crc32() returns byte size of 4
+PACKET_TRAILER_SIZE = PACKET_CHECKSUM_SIZE
+
+
+class PacketTrailer(Serializable):
+    def __init__(self, crc=None):
+        self.crc = crc
+
+    def to_bytes(self) -> bytes:
+        return self.crc.to_bytes(PACKET_CHECKSUM_SIZE, "big")
+
+    @classmethod
+    def from_bytes(cls, payload):
+        crc = payload
+        return cls(crc)
+
+    # Better abstraction?
+    def create_crc(self, payload: bytes):
+        self.crc = zlib.crc32(payload)
+
+    def verify(self, payload: bytes):
+        if int.from_bytes(self.crc) == zlib.crc32(payload):
+            return
+        else:
+            raise RuntimeError("Checksum of packet doesn't match")
+
+
+class Packet(Serializable):
+    @abstractmethod
+    def handle(self, connection):
+        raise NotImplementedError
+
+
+# Better to use an Enum
+class PacketHandler:
+    def __init__(self):
+        self._current_id = 1
+        self.id_to_class = {}
+        self.class_to_id = {}
+
+    def registerPacket(self, packetClass):
+        packetID = self._current_id
+        packetClass.header = PacketHeader(packetID, None)
+        self.id_to_class[packetID] = packetClass
+        self.class_to_id[packetClass.class_id] = packetID
+        self._current_id += 1
+
+
+packetHandler = PacketHandler()
+
+
+def encode(
+    *, header: PacketHeader, payload: Packet, trailer: PacketTrailer
+) -> bytes:
+    data = bytes(header.to_bytes() + payload.to_bytes() + trailer.to_bytes())
+    return data
